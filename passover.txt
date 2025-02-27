@@ -1,0 +1,45 @@
+sudo apt update && sudo apt upgrade -y
+sudo apt install apache2 -y
+sudo systemctl enable --now apache2
+sudo apt install libapache2-mod-wsgi-py3 python3-venv -y
+sudo systemctl restart apache2
+mkdir -p /var/www/myapp
+cd /var/www/myapp
+python3 -m venv venv
+source venv/bin/activate
+pip install flask
+nano /var/www/myapp/app.py
+from flask import Flask
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Hello, Raspberry Pi with Apache & Python!"
+
+if __name__ == "__main__":
+    app.run()
+nano /var/www/myapp/myapp.wsgi
+import sys
+sys.path.insert(0, "/var/www/myapp")
+
+from app import app as application
+sudo chown -R www-data:www-data /var/www/myapp
+sudo chmod -R 755 /var/www/myapp
+sudo nano /etc/apache2/sites-available/myapp.conf
+<VirtualHost *:80>
+    ServerName robin-davey.com
+    DocumentRoot /var/www/myapp
+
+    WSGIDaemonProcess myapp user=www-data group=www-data threads=5 python-home=/var/www/myapp/venv
+    WSGIScriptAlias / /var/www/myapp/myapp.wsgi
+
+    <Directory /var/www/myapp>
+        Require all granted
+    </Directory>
+</VirtualHost>
+sudo a2ensite myapp
+sudo systemctl restart apache2
+sudo apt install certbot python3-certbot-apache -y
+sudo certbot --apache -d robin-davey.com -d www.robin-davey.com
+sudo certbot renew --dry-run
+surfoj-xepvuq-4Bibsi
